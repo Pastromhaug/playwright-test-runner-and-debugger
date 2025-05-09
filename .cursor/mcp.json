@@ -4,12 +4,12 @@
       "command": "npx",
       "args": [
         "tsx",
-        "/Users/perandrestromhaug/code/mcps/fastmcp-boilerplate/src/server.ts"
+        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger/src/server.ts"
       ]
     },
     "testing-from-npm-registry": {
       "command": "npx",
-      "args": ["-y", "@perandrestromhaug/fastmcp-boilerplate"]
+      "args": ["-y", "@perandrestromhaug/playwright-test-runner-and-debugger"]
     }
   }
 }

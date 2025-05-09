@@ -1,8 +1,8 @@
 {
-  "name": "@perandrestromhaug/fastmcp-boilerplate",
+  "name": "@perandrestromhaug/playwright-test-runner-and-debugger",
   "version": "1.0.4",
   "bin": {
-    "fastmcp-boilerplate": "./dist/server.js"
+    "playwright-test-runner-and-debugger": "./dist/server.js"
   },
   "scripts": {
     "build": "tsc",
