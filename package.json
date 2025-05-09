@@ -1,6 +1,6 @@
 {
   "name": "@perandrestromhaug/fastmcp-boilerplate",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "bin": {
     "fastmcp-boilerplate": "./dist/server.js"
   },
