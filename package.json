@@ -1,7 +1,9 @@
 {
-  "name": "fastmcp-boilerplate",
+  "name": "@perandrestromhaug/fastmcp-boilerplate",
   "version": "1.0.0",
-  "main": "dist/index.js",
+  "bin": {
+    "fastmcp-boilerplate": "./dist/server.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "tsx src/server.ts",
@@ -18,7 +20,7 @@
   "repository": {
     "url": "https://github.com/punkpeye/fastmcp-boilerplate"
   },
-  "author": "Frank Fiegel <frank@glama.ai>",
+  "author": "Per Andres Tromhaug <per@tromhaug.com>",
   "homepage": "https://glama.ai/mcp",
   "type": "module",
   "license": "MIT",

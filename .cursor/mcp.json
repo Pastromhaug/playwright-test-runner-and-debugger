@@ -1,11 +1,15 @@
 {
   "mcpServers": {
-    "testing-fastmcp-boilerplate": {
+    "testing-from-local-script": {
       "command": "npx",
       "args": [
         "tsx",
         "/Users/perandrestromhaug/code/mcps/fastmcp-boilerplate/src/server.ts"
       ]
+    },
+    "testing-from-npm-registry": {
+      "command": "npx",
+      "args": ["-y", "@perandrestromhaug/fastmcp-boilerplate"]
     }
   }
 }
