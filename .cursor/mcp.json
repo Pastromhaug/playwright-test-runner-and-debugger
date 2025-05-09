@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "testing-fastmcp-boilerplate": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "/Users/perandrestromhaug/code/mcps/fastmcp-boilerplate/src/server.ts"
+      ]
+    }
+  }
+}
