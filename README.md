@@ -26,6 +26,7 @@ If you simply want to start the server, you can use the `start` script.
 npm run start
 ```
 
+
 However, you can also interact with the server using the `dev` script.
 
 ```bash
