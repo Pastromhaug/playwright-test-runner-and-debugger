@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-import { FastMCP } from "fastmcp";
-import { z } from "zod";
-import { add } from "./add.js";
-const server = new FastMCP({
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const fastmcp_1 = require("fastmcp");
+const zod_1 = require("zod");
+const add_js_1 = require("./add.js");
+const server = new fastmcp_1.FastMCP({
     name: "Addition",
     version: "1.0.0",
 });
@@ -14,12 +16,12 @@ server.addTool({
     },
     description: "Add two numbers",
     execute: async (args) => {
-        return String(add(args.a, args.b));
+        return String((0, add_js_1.add)(args.a, args.b));
     },
     name: "add",
-    parameters: z.object({
-        a: z.number().describe("The first number"),
-        b: z.number().describe("The second number"),
+    parameters: zod_1.z.object({
+        a: zod_1.z.number().describe("The first number"),
+        b: zod_1.z.number().describe("The second number"),
     }),
 });
 server.addResource({

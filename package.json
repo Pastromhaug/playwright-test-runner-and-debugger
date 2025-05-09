@@ -12,33 +12,9 @@
     "test": "vitest run",
     "format": "prettier --write . && eslint --fix ."
   },
-  "keywords": [
-    "fastmcp",
-    "mcp",
-    "boilerplate"
-  ],
-  "repository": {
-    "url": "https://github.com/punkpeye/fastmcp-boilerplate"
-  },
-  "author": "Per Andres Tromhaug <per@tromhaug.com>",
-  "homepage": "https://glama.ai/mcp",
-  "type": "module",
-  "license": "MIT",
-  "description": "A boilerplate for FastMCP",
   "dependencies": {
     "fastmcp": "^1.27.3",
     "zod": "^3.24.4"
-  },
-  "release": {
-    "branches": [
-      "main"
-    ],
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      "@semantic-release/npm",
-      "@semantic-release/github"
-    ]
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
