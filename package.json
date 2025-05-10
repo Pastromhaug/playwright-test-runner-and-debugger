@@ -11,7 +11,8 @@
     "lint": "prettier --check . && eslint . && tsc --noEmit",
     "test": "vitest run",
     "format": "prettier --write . && eslint --fix .",
-    "web": "vite"
+    "web": "vite",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "fastmcp": "^1.27.3",
