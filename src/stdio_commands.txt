@@ -1,0 +1,7 @@
+{"jsonrpc":"2.0","id":1, "method": "ping"}
+Example resource
+{"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"file:///logs/app.log"}}
+Add tool
+{"jsonrpc":"2.0","id":5,"method":"mcp:tool/execute","params":{"name":"add","arguments":{"a":5,"b":7}}}
+List playwright tests
+{"jsonrpc":"2.0","id":3,"method":"resources/read","params":{"uri":"file:///list-playwright-tests.txt"}}

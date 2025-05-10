@@ -1,11 +1,16 @@
 {
   "mcpServers": {
-    "testing-from-local-script": {
+    "test-lcl-stdio": {
       "command": "npx",
       "args": [
         "tsx",
-        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger/src/server.ts"
+        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger/src/server.ts",
+        "--project-root-path",
+        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger"
       ]
+    },
+    "test-local-http": {
+      "url": "http://localhost:3210"
     },
     "testing-from-npm-registry": {
       "command": "npx",
