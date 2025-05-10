@@ -1,9 +1,33 @@
 #!/usr/bin/env node
 
 import { FastMCP } from "fastmcp";
+import fs from "fs";
+import yargs from "yargs";
 import { z } from "zod";
 
 import { add } from "./add.js";
+
+const argv = yargs(process.argv.slice(2))
+  .options({
+    "absolute-path-to-playwright-config": {
+      alias: "ap",
+      demandOption: true,
+      description: "The absolute path to the playwright config",
+      type: "string",
+    },
+  })
+  .parseSync();
+
+const playwrightConfigPath = argv.absolutePathToPlaywrightConfig;
+if (!fs.existsSync(playwrightConfigPath)) {
+  throw new Error(
+    `Playwright config file ${playwrightConfigPath} does not exist. Current working directory: ${process.cwd()}`
+  );
+}
+
+// const playwrightConfig: PlaywrightTestConfig = await import(
+//   playwrightConfigPath
+// );
 
 const server = new FastMCP({
   name: "Addition",
