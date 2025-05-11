@@ -89,7 +89,21 @@ server.addTool({
     const outputDir = `${args.traceDirectory}/trace`;
     const zip = new AdmZip(`${args.traceDirectory}/trace.zip`);
     zip.extractAllTo(outputDir, true);
-    return `Successfully extracted trace files to ${outputDir}`;
+    let output = `Extracted trace files to ${outputDir}.`;
+    try {
+      const files = fs.readdirSync(outputDir, { recursive: true });
+      output += `\n\nTrace directory structure:\n${files.join("\n")}`;
+    } catch (error) {
+      output += `\n\nError reading trace directory: ${error}`;
+    }
+    const traceFilePath = `${outputDir}/0-trace.trace`;
+    try {
+      const traceContent = fs.readFileSync(traceFilePath, "utf8");
+      output += `\n\nTrace content from ${traceFilePath}:\n${traceContent}`;
+    } catch (error) {
+      output += `\n\nError reading trace file: ${error}`;
+    }
+    return output;
   },
   name: "get-trace",
   parameters: z.object({
