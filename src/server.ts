@@ -5,8 +5,14 @@ import { FastMCP } from "fastmcp";
 import fs from "fs";
 // Import jiti for TypeScript file handling
 import jiti from "jiti";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
 import yargs from "yargs";
 import { z } from "zod";
+
+// Get current filename and directory in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const argv = yargs(process.argv.slice(2))
   .options({
