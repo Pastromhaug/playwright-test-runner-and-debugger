@@ -13,13 +13,13 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   testDir: "./tests",
   use: {
-    baseURL: "http://localhost:3001",
+    baseURL: "http://localhost:3000",
     trace: "on-first-retry",
   },
   webServer: {
     command: "npm run web",
     reuseExistingServer: !process.env.CI,
-    url: "http://localhost:3001",
+    url: "http://localhost:3000",
   },
   workers: process.env.CI ? 1 : undefined,
 });

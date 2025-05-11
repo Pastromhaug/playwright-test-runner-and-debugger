@@ -82,20 +82,37 @@ server.addTool({
   annotations: {
     openWorldHint: false,
     readOnlyHint: true,
+    title: "Get Traces, Network, and Console Logs",
+  },
+  description:
+    "Returns the Playwright traces, network, and console logs as JSON. For debugging test failures.",
+  execute: async () => {
+    const playwrightConfig = getPlaywrightConfig();
+    return JSON.stringify(playwrightConfig, null, 2);
+  },
+  name: "get-config",
+  parameters: z.object({}), // No parameters needed
+});
+
+server.addTool({
+  annotations: {
+    openWorldHint: false,
+    readOnlyHint: true,
     title: "List Playwright Tests",
   },
   description: "Lists all available Playwright tests",
   execute: async () => {
-    const { stderr, stdout } = await sunSubprocess(playwrightExecutablePath, [
-      "test",
-      "--list",
-      "--config",
-      playwrightConfigPath,
-    ]);
+    const { exitCode, stderr, stdout } = await sunSubprocess(
+      playwrightExecutablePath,
+      ["test", "--list", "--config", playwrightConfigPath]
+    );
 
     let output = stdout;
     if (stderr) {
       output = `${stderr}\n\n${stdout}`;
+    }
+    if (exitCode !== 0) {
+      output = `${output}\n\nExited with code ${exitCode}`;
     }
     return output;
   },
@@ -118,6 +135,8 @@ server.addTool({
       playwrightConfigPath,
       "--trace",
       "on",
+      "--retries",
+      "0",
       "--max-failures",
       "0",
       "--reporter",
@@ -255,7 +274,11 @@ server.start({
 async function sunSubprocess(
   command: string,
   args: string[]
-): Promise<{ stderr: string; stdout: string }> {
+): Promise<{
+  exitCode: number;
+  stderr: string;
+  stdout: string;
+}> {
   return new Promise((resolve, reject) => {
     const process = spawn(command, args);
     let stdout = "";
@@ -270,13 +293,7 @@ async function sunSubprocess(
     });
 
     process.on("close", (code) => {
-      if (code === 0) {
-        resolve({ stderr, stdout });
-      } else {
-        reject(
-          new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`)
-        );
-      }
+      resolve({ exitCode: code ?? 0, stderr, stdout });
     });
 
     process.on("error", (err) => {
