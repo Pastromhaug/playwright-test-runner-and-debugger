@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-import { PlaywrightTestConfig } from "@playwright/test";
 import { spawn } from "child_process";
 import { FastMCP } from "fastmcp";
 import fs from "fs";
+// Import jiti for TypeScript file handling
+import jiti from "jiti";
 import yargs from "yargs";
 import { z } from "zod";
 
@@ -18,12 +19,14 @@ const argv = yargs(process.argv.slice(2))
   })
   .parseSync();
 
+// Only worry about the .ts extension
 const playwrightConfigPath = `${argv.projectRootPath}/playwright.config.ts`;
 if (!fs.existsSync(playwrightConfigPath)) {
   throw new Error(
-    `Playwright config file ${playwrightConfigPath} does not exist. Current working directory: ${process.cwd()}`
+    `Playwright config file not found at ${playwrightConfigPath}. Current working directory: ${process.cwd()}`
   );
 }
+
 const playwrightExecutablePath = `${argv.projectRootPath}/node_modules/.bin/playwright`;
 if (!fs.existsSync(playwrightExecutablePath)) {
   throw new Error(
@@ -31,22 +34,34 @@ if (!fs.existsSync(playwrightExecutablePath)) {
   );
 }
 
+// Create a jiti instance
+const requireTs = jiti(__filename, {
+  interopDefault: true,
+});
+
+// Use the instance to require the playwright config
+const getPlaywrightConfig = () => {
+  try {
+    return requireTs(playwrightConfigPath);
+  } catch (error) {
+    console.error("Error importing playwright config:", error);
+    throw error;
+  }
+};
+
 (async () => {
-  const playwrightConfig: PlaywrightTestConfig = (
-    await import(playwrightConfigPath)
-  ).default;
-  console.log("playwrightConfig", playwrightConfig);
+  try {
+    const playwrightConfig = getPlaywrightConfig();
+    console.log("playwrightConfig", playwrightConfig);
+  } catch (error) {
+    console.error("Error importing playwright config:", error);
+  }
 })();
 
 const server = new FastMCP({
   name: "Addition",
   version: "1.0.0",
 });
-
-const getPlaywrightConfig = async () => {
-  const configModule = await import(playwrightConfigPath);
-  return configModule.default;
-};
 
 server.addTool({
   annotations: {
@@ -56,7 +71,7 @@ server.addTool({
   },
   description: "Returns the Playwright configuration as JSON",
   execute: async () => {
-    const playwrightConfig = await getPlaywrightConfig();
+    const playwrightConfig = getPlaywrightConfig();
     return JSON.stringify(playwrightConfig, null, 2);
   },
   name: "get-config",

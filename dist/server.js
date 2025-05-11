@@ -14,24 +14,40 @@ const argv = yargs(process.argv.slice(2))
     },
 })
     .parseSync();
+// Check for both .ts and .js extensions
 const playwrightConfigPath = `${argv.projectRootPath}/playwright.config.ts`;
-if (!fs.existsSync(playwrightConfigPath)) {
-    throw new Error(`Playwright config file ${playwrightConfigPath} does not exist. Current working directory: ${process.cwd()}`);
+const playwrightConfigPathJS = `${argv.projectRootPath}/playwright.config.js`;
+let configPath;
+// In production (after compilation), we need to use the .js file
+if (fs.existsSync(playwrightConfigPathJS)) {
+    configPath = playwrightConfigPathJS;
+}
+else if (fs.existsSync(playwrightConfigPath)) {
+    configPath = playwrightConfigPath;
+}
+else {
+    throw new Error(`Playwright config file not found at ${playwrightConfigPath} or ${playwrightConfigPathJS}. Current working directory: ${process.cwd()}`);
 }
 const playwrightExecutablePath = `${argv.projectRootPath}/node_modules/.bin/playwright`;
 if (!fs.existsSync(playwrightExecutablePath)) {
     throw new Error(`Playwright executable ${playwrightExecutablePath} does not exist. Current working directory: ${process.cwd()}`);
 }
 (async () => {
-    const playwrightConfig = (await import(playwrightConfigPath)).default;
-    console.log("playwrightConfig", playwrightConfig);
+    try {
+        const playwrightConfig = (await import(configPath))
+            .default;
+        console.log("playwrightConfig", playwrightConfig);
+    }
+    catch (error) {
+        console.error("Error importing playwright config:", error);
+    }
 })();
 const server = new FastMCP({
     name: "Addition",
     version: "1.0.0",
 });
 const getPlaywrightConfig = async () => {
-    const configModule = await import(playwrightConfigPath);
+    const configModule = await import(configPath);
     return configModule.default;
 };
 server.addTool({
@@ -60,7 +76,7 @@ server.addTool({
             "test",
             "--list",
             "--config",
-            playwrightConfigPath,
+            configPath,
         ]);
         let output = stdout;
         if (stderr) {
@@ -82,7 +98,7 @@ server.addTool({
         const cmdArgs = [
             "test",
             "--config",
-            playwrightConfigPath,
+            configPath,
             "--trace",
             "on",
             "--max-failures",
