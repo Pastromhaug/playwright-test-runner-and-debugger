@@ -1,6 +1,6 @@
 {
   "name": "@perandrestromhaug/playwright-test-runner-and-debugger",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "bin": {
     "playwright-test-runner-and-debugger": "./dist/server.js"
   },
