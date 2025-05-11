@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+import AdmZip from "adm-zip";
 import { spawn } from "child_process";
 import { FastMCP } from "fastmcp";
 import fs from "fs";
@@ -82,16 +82,21 @@ server.addTool({
   annotations: {
     openWorldHint: false,
     readOnlyHint: true,
-    title: "Get Traces, Network, and Console Logs",
+    title: "Get Trace, Network, and Console Log ",
   },
-  description:
-    "Returns the Playwright traces, network, and console logs as JSON. For debugging test failures.",
-  execute: async () => {
-    const playwrightConfig = getPlaywrightConfig();
-    return JSON.stringify(playwrightConfig, null, 2);
+  description: "Get the trace, network, and console log for a given test",
+  execute: async (args) => {
+    const outputDir = `${args.traceDirectory}/trace`;
+    const zip = new AdmZip(`${args.traceDirectory}/trace.zip`);
+    zip.extractAllTo(outputDir, true);
+    return `Successfully extracted trace files to ${outputDir}`;
   },
-  name: "get-config",
-  parameters: z.object({}), // No parameters needed
+  name: "get-trace",
+  parameters: z.object({
+    traceDirectory: z
+      .string()
+      .describe("The directory the trace.zip was saved to"),
+  }),
 });
 
 server.addTool({
@@ -235,42 +240,6 @@ server.addTool({
   }),
 });
 
-// server.addTool({
-//   annotations: {
-//     openWorldHint: false, // This tool doesn't interact with external systems
-//     readOnlyHint: true, // This tool doesn't modify anything
-//     title: "Addition",
-//   },
-//   description: "Add two numbers",
-//   execute: async (args) => {
-//     return String(add(args.a, args.b));
-//   },
-//   name: "add",
-//   parameters: z.object({
-//     a: z.number().describe("The first number"),
-//     b: z.number().describe("The second number"),
-//   }),
-// });
-
-server.addPrompt({
-  arguments: [
-    {
-      description: "Git diff or description of changes",
-      name: "changes",
-      required: true,
-    },
-  ],
-  description: "Generate a Git commit message",
-  load: async (args) => {
-    return `Generate a concise but descriptive commit message for these changes:\n\n${args.changes}`;
-  },
-  name: "git-commit",
-});
-
-server.start({
-  transportType: "stdio",
-});
-
 async function sunSubprocess(
   command: string,
   args: string[]
@@ -301,3 +270,7 @@ async function sunSubprocess(
     });
   });
 }
+
+server.start({
+  transportType: "stdio",
+});

@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("dashboard has correct heading", async ({ page }) => {
   await page.goto("/");
   const heading = page.getByRole("heading", {
-    name: "Playwright Test Runner MCD",
+    name: "Playwright Test Runner MCP",
   });
   await expect(heading).toBeVisible();
 
