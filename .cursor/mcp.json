@@ -14,7 +14,12 @@
     },
     "testing-from-npm-registry": {
       "command": "npx",
-      "args": ["-y", "@perandrestromhaug/playwright-test-runner-and-debugger"]
+      "args": [
+        "-y",
+        "@perandrestromhaug/playwright-test-runner-and-debugger",
+        "--project-root-path",
+        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger"
+      ]
     }
   }
 }
