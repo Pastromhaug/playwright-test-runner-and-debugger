@@ -1,7 +1,10 @@
 #!/usr/bin/env node
+import AdmZip from "adm-zip";
 import { spawn } from "child_process";
 import { FastMCP } from "fastmcp";
 import fs from "fs";
+// Import jiti for TypeScript file handling
+import jiti from "jiti";
 import yargs from "yargs";
 import { z } from "zod";
 const argv = yargs(process.argv.slice(2))
@@ -14,28 +17,32 @@ const argv = yargs(process.argv.slice(2))
     },
 })
     .parseSync();
-// Check for both .ts and .js extensions
+// Only worry about the .ts extension
 const playwrightConfigPath = `${argv.projectRootPath}/playwright.config.ts`;
-const playwrightConfigPathJS = `${argv.projectRootPath}/playwright.config.js`;
-let configPath;
-// In production (after compilation), we need to use the .js file
-if (fs.existsSync(playwrightConfigPathJS)) {
-    configPath = playwrightConfigPathJS;
-}
-else if (fs.existsSync(playwrightConfigPath)) {
-    configPath = playwrightConfigPath;
-}
-else {
-    throw new Error(`Playwright config file not found at ${playwrightConfigPath} or ${playwrightConfigPathJS}. Current working directory: ${process.cwd()}`);
+if (!fs.existsSync(playwrightConfigPath)) {
+    throw new Error(`Playwright config file not found at ${playwrightConfigPath}. Current working directory: ${process.cwd()}`);
 }
 const playwrightExecutablePath = `${argv.projectRootPath}/node_modules/.bin/playwright`;
 if (!fs.existsSync(playwrightExecutablePath)) {
     throw new Error(`Playwright executable ${playwrightExecutablePath} does not exist. Current working directory: ${process.cwd()}`);
 }
+// Create a jiti instance
+const requireTs = jiti(__filename, {
+    interopDefault: true,
+});
+// Use the instance to require the playwright config
+const getPlaywrightConfig = () => {
+    try {
+        return requireTs(playwrightConfigPath);
+    }
+    catch (error) {
+        console.error("Error importing playwright config:", error);
+        throw error;
+    }
+};
 (async () => {
     try {
-        const playwrightConfig = (await import(configPath))
-            .default;
+        const playwrightConfig = getPlaywrightConfig();
         console.log("playwrightConfig", playwrightConfig);
     }
     catch (error) {
@@ -46,10 +53,6 @@ const server = new FastMCP({
     name: "Addition",
     version: "1.0.0",
 });
-const getPlaywrightConfig = async () => {
-    const configModule = await import(configPath);
-    return configModule.default;
-};
 server.addTool({
     annotations: {
         openWorldHint: false,
@@ -58,7 +61,7 @@ server.addTool({
     },
     description: "Returns the Playwright configuration as JSON",
     execute: async () => {
-        const playwrightConfig = await getPlaywrightConfig();
+        const playwrightConfig = getPlaywrightConfig();
         return JSON.stringify(playwrightConfig, null, 2);
     },
     name: "get-config",
@@ -68,19 +71,53 @@ server.addTool({
     annotations: {
         openWorldHint: false,
         readOnlyHint: true,
+        title: "Get Trace, Network, and Console Log ",
+    },
+    description: "Get the trace, network, and console log for a given test",
+    execute: async (args) => {
+        const outputDir = `${args.traceDirectory}/trace`;
+        const zip = new AdmZip(`${args.traceDirectory}/trace.zip`);
+        zip.extractAllTo(outputDir, true);
+        let output = `Extracted trace files to ${outputDir}.`;
+        try {
+            const files = fs.readdirSync(outputDir, { recursive: true });
+            output += `\n\nTrace directory structure:\n${files.join("\n")}`;
+        }
+        catch (error) {
+            output += `\n\nError reading trace directory: ${error}`;
+        }
+        const traceFilePath = `${outputDir}/0-trace.trace`;
+        try {
+            const traceContent = fs.readFileSync(traceFilePath, "utf8");
+            output += `\n\nTrace content from ${traceFilePath}:\n${traceContent}`;
+        }
+        catch (error) {
+            output += `\n\nError reading trace file: ${error}`;
+        }
+        return output;
+    },
+    name: "get-trace",
+    parameters: z.object({
+        traceDirectory: z
+            .string()
+            .describe("The directory the trace.zip was saved to"),
+    }),
+});
+server.addTool({
+    annotations: {
+        openWorldHint: false,
+        readOnlyHint: true,
         title: "List Playwright Tests",
     },
     description: "Lists all available Playwright tests",
     execute: async () => {
-        const { stderr, stdout } = await sunSubprocess(playwrightExecutablePath, [
-            "test",
-            "--list",
-            "--config",
-            configPath,
-        ]);
+        const { exitCode, stderr, stdout } = await sunSubprocess(playwrightExecutablePath, ["test", "--list", "--config", playwrightConfigPath]);
         let output = stdout;
         if (stderr) {
             output = `${stderr}\n\n${stdout}`;
+        }
+        if (exitCode !== 0) {
+            output = `${output}\n\nExited with code ${exitCode}`;
         }
         return output;
     },
@@ -98,9 +135,11 @@ server.addTool({
         const cmdArgs = [
             "test",
             "--config",
-            configPath,
+            playwrightConfigPath,
             "--trace",
             "on",
+            "--retries",
+            "0",
             "--max-failures",
             "0",
             "--reporter",
@@ -182,39 +221,6 @@ server.addTool({
             .describe("Run the tests in 'UI mode' which lets the developer control test execution and view console and network logs"),
     }),
 });
-// server.addTool({
-//   annotations: {
-//     openWorldHint: false, // This tool doesn't interact with external systems
-//     readOnlyHint: true, // This tool doesn't modify anything
-//     title: "Addition",
-//   },
-//   description: "Add two numbers",
-//   execute: async (args) => {
-//     return String(add(args.a, args.b));
-//   },
-//   name: "add",
-//   parameters: z.object({
-//     a: z.number().describe("The first number"),
-//     b: z.number().describe("The second number"),
-//   }),
-// });
-server.addPrompt({
-    arguments: [
-        {
-            description: "Git diff or description of changes",
-            name: "changes",
-            required: true,
-        },
-    ],
-    description: "Generate a Git commit message",
-    load: async (args) => {
-        return `Generate a concise but descriptive commit message for these changes:\n\n${args.changes}`;
-    },
-    name: "git-commit",
-});
-server.start({
-    transportType: "stdio",
-});
 async function sunSubprocess(command, args) {
     return new Promise((resolve, reject) => {
         const process = spawn(command, args);
@@ -227,15 +233,13 @@ async function sunSubprocess(command, args) {
             stderr += data.toString();
         });
         process.on("close", (code) => {
-            if (code === 0) {
-                resolve({ stderr, stdout });
-            }
-            else {
-                reject(new Error(`Command failed with exit code ${code}\nStderr: ${stderr}`));
-            }
+            resolve({ exitCode: code ?? 0, stderr, stdout });
         });
         process.on("error", (err) => {
             reject(err);
         });
     });
 }
+server.start({
+    transportType: "stdio",
+});
