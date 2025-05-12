@@ -274,52 +274,53 @@ server.addTool({
             .describe("Run the tests in 'UI mode' which lets the developer control test execution and view console and network logs"),
     }),
 });
+// server.addTool({
+//   annotations: {
+//     openWorldHint: false,
+//     readOnlyHint: true,
+//     title: "View Test Screenshot",
+//   },
+//   description: "Get a screenshot from a test run. Returns the image directly.",
+//   execute: async (args) => {
+//     const { screenshotFileName, traceDirectory } = args;
+//     try {
+//       let normalizedPath = screenshotFileName;
+//       if (!normalizedPath.startsWith("resources/")) {
+//         normalizedPath = `resources/${normalizedPath}`;
+//       }
+//       const fullPath = `${traceDirectory}/trace/${normalizedPath}`;
+//       if (!fs.existsSync(fullPath)) {
+//         return `Screenshot not found at ${fullPath}`;
+//       }
+//       return imageContent({
+//         path: fullPath,
+//       });
+//     } catch (error) {
+//       if (error instanceof Error) {
+//         return `Error reading screenshot: ${error.message}`;
+//       }
+//       return `Unknown error reading screenshot`;
+//     }
+//   },
+//   name: "view-screenshot",
+//   parameters: z.object({
+//     screenshotFileName: z
+//       .string()
+//       .describe(
+//         "The name of the screenshot file within the trace/resources directory (just file name, not path)"
+//       ),
+//     traceDirectory: z
+//       .string()
+//       .describe("The directory the trace.zip was saved to"),
+//   }),
+// });
 server.addTool({
     annotations: {
         openWorldHint: false,
         readOnlyHint: true,
-        title: "View Test Screenshot",
+        title: "Get Test Screenshots",
     },
-    description: "Get a screenshot from a test run. Returns the image directly.",
-    execute: async (args) => {
-        const { screenshotFileName, traceDirectory } = args;
-        try {
-            let normalizedPath = screenshotFileName;
-            if (!normalizedPath.startsWith("resources/")) {
-                normalizedPath = `resources/${normalizedPath}`;
-            }
-            const fullPath = `${traceDirectory}/trace/${normalizedPath}`;
-            if (!fs.existsSync(fullPath)) {
-                return `Screenshot not found at ${fullPath}`;
-            }
-            return imageContent({
-                path: fullPath,
-            });
-        }
-        catch (error) {
-            if (error instanceof Error) {
-                return `Error reading screenshot: ${error.message}`;
-            }
-            return `Unknown error reading screenshot`;
-        }
-    },
-    name: "view-screenshot",
-    parameters: z.object({
-        screenshotFileName: z
-            .string()
-            .describe("The name of the screenshot file within the trace/resources directory (just file name, not path)"),
-        traceDirectory: z
-            .string()
-            .describe("The directory the trace.zip was saved to"),
-    }),
-});
-server.addTool({
-    annotations: {
-        openWorldHint: false,
-        readOnlyHint: true,
-        title: "View All Test Screenshots",
-    },
-    description: "Lists all available screenshots in a test run's trace directory and returns the actual images",
+    description: "Get all available screenshots for a test run. Useful for debugging.",
     execute: async (args) => {
         const { traceDirectory } = args;
         const { outputDir } = maybeExtractTraceZip(traceDirectory);
@@ -353,7 +354,7 @@ server.addTool({
             return `Unknown error listing screenshots`;
         }
     },
-    name: "view-all-screenshots",
+    name: "get-screenshots",
     parameters: z.object({
         traceDirectory: z
             .string()
