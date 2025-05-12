@@ -310,7 +310,7 @@ server.addTool({
       .optional()
       .default(false)
       .describe(
-        "Run tests in debug mode. This lets the developer control test execution and step line by line through the code"
+        "Run tests in debug mode. This lets the developer control test execution and step line by line through the code. Only do this if the developer specifically asks you to."
       ),
     fullyParallel: z
       .boolean()
@@ -324,7 +324,28 @@ server.addTool({
       .optional()
       .default(".*")
       .describe(
-        'Only run tests matching this regular expression (default: ".*")'
+        `Only run tests matching this regular expression (default: ".*")
+
+**Instructions**
+
+Let's say list-tests outputs an item like this:
+> [chromium] › homepage.spec.ts:5:7 › Homepage › Has nav
+
+In this format you see the file name, test description, and test name separated by "›".
+
+Examples that will match:
+- "homepage.spec.ts"
+- "Homepage"
+- "Homepage Has nav"
+- "Has nav"
+
+Examples that will NOT match:
+- "Homepage > Has nav"
+- "homepage.spec.ts Homepage Has nav"
+
+Summary:
+- Do not grep across file name _and_ description/test name. Do one or the other.
+- Do not include the "›" in your grep value`
       ),
     headed: z
       .boolean()
@@ -350,7 +371,7 @@ server.addTool({
       .optional()
       .default(false)
       .describe(
-        "Run the tests in 'UI mode' which lets the developer control test execution and view console and network logs"
+        "Run the tests in 'UI mode' which lets the developer control test execution and view console and network logs. Only do this if the developer specificallyasks you to."
       ),
   }),
 });
