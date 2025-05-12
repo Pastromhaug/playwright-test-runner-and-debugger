@@ -108,13 +108,13 @@ server.addTool({
     annotations: {
         openWorldHint: false,
         readOnlyHint: true,
-        title: "Get Network Log For Test Run",
+        title: "Get Network Log for Test Run",
     },
-    description: "Get browser network logs for a test run",
+    description: "Get browser network logs for a test run. Useful for debugging test failures",
     execute: async (args) => {
         const { message, outputDir } = maybeExtractTraceZip(args.traceDirectory);
         let output = message;
-        const networkFilePath = `${outputDir}/0-network.json`;
+        const networkFilePath = `${outputDir}/0-trace.network`;
         try {
             const networkContent = fs.readFileSync(networkFilePath, "utf8");
             output += `\n\nNetwork content from ${networkFilePath}:\n\n${networkContent}`;
@@ -135,9 +135,9 @@ server.addTool({
     annotations: {
         openWorldHint: false,
         readOnlyHint: true,
-        title: "Get Debug Trace For Test Run",
+        title: "Get Trace for Test Run",
     },
-    description: "Traces include step-by-step playwright test execution info along with console logs",
+    description: "Get the trace for a test run. This includes step-by-step playwright test execution info along with console logs. Useful for debugging test failures",
     execute: async (args) => {
         const { message, outputDir } = maybeExtractTraceZip(args.traceDirectory);
         let output = message;
@@ -150,14 +150,6 @@ server.addTool({
             output += `\n\nError reading trace file: ${error}`;
         }
         return output;
-        const networkFilePath = `${outputDir}/0-network.json`;
-        try {
-            const networkContent = fs.readFileSync(networkFilePath, "utf8");
-            output += `\n\nNetwork content from ${networkFilePath}:\n\n${networkContent}`;
-        }
-        catch (error) {
-            output += `\n\nError reading network file: ${error}`;
-        }
     },
     name: "get-trace",
     parameters: z.object({
