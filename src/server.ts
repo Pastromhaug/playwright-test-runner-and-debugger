@@ -54,35 +54,50 @@ const getPlaywrightConfig = () => {
 };
 
 /**
+ * Constructs the full path to the trace directory from just the directory name
+ * @param traceDirName The name of the trace directory (e.g. "home-homepage-has-correct-heading-chromium")
+ * @returns The full path to the trace directory
+ */
+function getFullTracePath(traceDirName: string): string {
+  // Get the output directory from the playwright config, or fall back to 'test-results'
+  const playwrightConfig = getPlaywrightConfig();
+  let outputDir = playwrightConfig?.outputDir || "test-results";
+
+  // Normalize the outputDir by removing leading "." or "./" and trailing "/"
+  if (outputDir.startsWith("./")) {
+    outputDir = outputDir.substring(2);
+  } else if (outputDir.startsWith(".")) {
+    outputDir = outputDir.substring(1);
+  }
+
+  if (outputDir.endsWith("/")) {
+    outputDir = outputDir.slice(0, -1);
+  }
+
+  const fullPath = `${argv.projectRootPath}/${outputDir}/${traceDirName}`;
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Trace directory '${traceDirName}' not found`);
+  }
+  return fullPath;
+}
+
+/**
  * Extracts trace.zip file if the output directory doesn't already exist
- * @param traceDirectory The directory containing the trace.zip file
+ * @param traceDirName The name of the trace directory
  * @returns An object with the output directory path and a message including directory structure
  */
-function maybeExtractTraceZip(traceDirectory: string): {
-  message: string;
+function maybeExtractTraceZip(traceDirName: string): {
   outputDir: string;
 } {
+  const traceDirectory = getFullTracePath(traceDirName);
   const outputDir = `${traceDirectory}/trace`;
-  let message = "";
-  if (fs.existsSync(outputDir)) {
-    message = `Using existing trace files in ${outputDir}.`;
-  } else {
-    const zipPath = `${traceDirectory}/trace.zip`;
-    if (!fs.existsSync(zipPath)) {
-      throw new Error(`Trace zip file not found at ${zipPath}`);
-    }
-    const zip = new AdmZip(zipPath);
-    zip.extractAllTo(outputDir, true);
-    message = `Extracted trace files to ${outputDir}.`;
+  const zipPath = `${traceDirectory}/trace.zip`;
+  if (!fs.existsSync(zipPath)) {
+    throw new Error(`Trace not found for directory ${traceDirName}`);
   }
-  try {
-    const files = fs.readdirSync(outputDir, { recursive: true });
-    message += `\n\nTrace directory structure:\n${files.join("\n")}`;
-  } catch (error) {
-    message += `\n\nError reading trace directory: ${error}`;
-  }
+  const zip = new AdmZip(zipPath);
+  zip.extractAllTo(outputDir, true);
   return {
-    message,
     outputDir,
   };
 }
@@ -125,13 +140,12 @@ server.addTool({
   description:
     "Get browser network logs for a test run. Useful for debugging test failures",
   execute: async (args) => {
-    const { message, outputDir } = maybeExtractTraceZip(args.traceDirectory);
-    let output = message;
-
+    const { outputDir } = maybeExtractTraceZip(args.traceDirectory);
+    let output = "";
     const networkFilePath = `${outputDir}/0-trace.network`;
     try {
       const networkContent = fs.readFileSync(networkFilePath, "utf8");
-      output += `\n\nNetwork content from ${networkFilePath}:\n\n${networkContent}`;
+      output += `Network log:\n\n${networkContent}`;
     } catch (error) {
       output += `\n\nError reading network file: ${error}`;
     }
@@ -141,7 +155,9 @@ server.addTool({
   parameters: z.object({
     traceDirectory: z
       .string()
-      .describe("The directory the trace.zip was saved to"),
+      .describe(
+        "The name of the trace directory (e.g. 'home-homepage-has-correct-heading-chromium')"
+      ),
   }),
 });
 
@@ -154,15 +170,14 @@ server.addTool({
   description:
     "Get the trace for a test run. This includes step-by-step playwright test execution info along with console logs. Useful for debugging test failures",
   execute: async (args) => {
-    const { message, outputDir } = maybeExtractTraceZip(args.traceDirectory);
-    let output = message;
-
+    const { outputDir } = maybeExtractTraceZip(args.traceDirectory);
+    let output = "";
     const traceFilePath = `${outputDir}/0-trace.trace`;
     try {
       const traceContent = fs.readFileSync(traceFilePath, "utf8");
-      output += `\n\nTrace content from ${traceFilePath}:\n\n${traceContent}`;
+      output += `Trace content:\n\n${traceContent}`;
     } catch (error) {
-      output += `\n\nError reading trace file: ${error}`;
+      output += `\n\nError reading trace: ${error}`;
     }
     return output;
   },
@@ -170,7 +185,9 @@ server.addTool({
   parameters: z.object({
     traceDirectory: z
       .string()
-      .describe("The directory the trace.zip was saved to"),
+      .describe(
+        "The name of the trace directory (e.g. 'home-homepage-has-correct-heading-chromium')"
+      ),
   }),
 });
 
@@ -370,7 +387,7 @@ server.addTool({
 
     const resourcesDir = `${outputDir}/resources`;
     if (!fs.existsSync(resourcesDir)) {
-      return `Resources directory not found at ${resourcesDir}`;
+      return `Resources directory not found in the trace directory`;
     }
 
     try {
@@ -403,7 +420,9 @@ server.addTool({
   parameters: z.object({
     traceDirectory: z
       .string()
-      .describe("The directory the trace.zip was saved to"),
+      .describe(
+        "The name of the trace directory (e.g. 'home-homepage-has-correct-heading-chromium')"
+      ),
   }),
 });
 
