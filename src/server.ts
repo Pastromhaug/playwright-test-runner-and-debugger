@@ -55,6 +55,40 @@ const getPlaywrightConfig = () => {
   }
 };
 
+/**
+ * Extracts trace.zip file if the output directory doesn't already exist
+ * @param traceDirectory The directory containing the trace.zip file
+ * @returns An object with the output directory path and a message including directory structure
+ */
+function maybeExtractTraceZip(traceDirectory: string): {
+  message: string;
+  outputDir: string;
+} {
+  const outputDir = `${traceDirectory}/trace`;
+  let message = "";
+  if (fs.existsSync(outputDir)) {
+    message = `Using existing trace files in ${outputDir}.`;
+  } else {
+    const zipPath = `${traceDirectory}/trace.zip`;
+    if (!fs.existsSync(zipPath)) {
+      throw new Error(`Trace zip file not found at ${zipPath}`);
+    }
+    const zip = new AdmZip(zipPath);
+    zip.extractAllTo(outputDir, true);
+    message = `Extracted trace files to ${outputDir}.`;
+  }
+  try {
+    const files = fs.readdirSync(outputDir, { recursive: true });
+    message += `\n\nTrace directory structure:\n${files.join("\n")}`;
+  } catch (error) {
+    message += `\n\nError reading trace directory: ${error}`;
+  }
+  return {
+    message,
+    outputDir,
+  };
+}
+
 (async () => {
   try {
     const playwrightConfig = getPlaywrightConfig();
@@ -88,24 +122,47 @@ server.addTool({
   annotations: {
     openWorldHint: false,
     readOnlyHint: true,
-    title: "Get Trace, Network, and Console Log ",
+    title: "Get Network Log for Test Run",
   },
-  description: "Get the trace, network, and console log for a given test",
+  description:
+    "Get browser network logs for a test run. Useful for debugging test failures",
   execute: async (args) => {
-    const outputDir = `${args.traceDirectory}/trace`;
-    const zip = new AdmZip(`${args.traceDirectory}/trace.zip`);
-    zip.extractAllTo(outputDir, true);
-    let output = `Extracted trace files to ${outputDir}.`;
+    const { message, outputDir } = maybeExtractTraceZip(args.traceDirectory);
+    let output = message;
+
+    const networkFilePath = `${outputDir}/0-trace.network`;
     try {
-      const files = fs.readdirSync(outputDir, { recursive: true });
-      output += `\n\nTrace directory structure:\n${files.join("\n")}`;
+      const networkContent = fs.readFileSync(networkFilePath, "utf8");
+      output += `\n\nNetwork content from ${networkFilePath}:\n\n${networkContent}`;
     } catch (error) {
-      output += `\n\nError reading trace directory: ${error}`;
+      output += `\n\nError reading network file: ${error}`;
     }
+    return output;
+  },
+  name: "get-network-log",
+  parameters: z.object({
+    traceDirectory: z
+      .string()
+      .describe("The directory the trace.zip was saved to"),
+  }),
+});
+
+server.addTool({
+  annotations: {
+    openWorldHint: false,
+    readOnlyHint: true,
+    title: "Get Trace for Test Run",
+  },
+  description:
+    "Get the trace for a test run. This includes step-by-step playwright test execution info along with console logs. Useful for debugging test failures",
+  execute: async (args) => {
+    const { message, outputDir } = maybeExtractTraceZip(args.traceDirectory);
+    let output = message;
+
     const traceFilePath = `${outputDir}/0-trace.trace`;
     try {
       const traceContent = fs.readFileSync(traceFilePath, "utf8");
-      output += `\n\nTrace content from ${traceFilePath}:\n${traceContent}`;
+      output += `\n\nTrace content from ${traceFilePath}:\n\n${traceContent}`;
     } catch (error) {
       output += `\n\nError reading trace file: ${error}`;
     }
