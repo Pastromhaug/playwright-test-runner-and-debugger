@@ -1,18 +1,16 @@
 #!/usr/bin/env node
 import AdmZip from "adm-zip";
 import { spawn } from "child_process";
-import { FastMCP } from "fastmcp";
+import { Content, FastMCP, imageContent } from "fastmcp";
 import fs from "fs";
 // Import jiti for TypeScript file handling
 import jiti from "jiti";
-import { dirname } from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
 import { z } from "zod";
 
-// Get current filename and directory in ES modules
+// Get current filename in ES modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const argv = yargs(process.argv.slice(2))
   .options({
@@ -314,6 +312,98 @@ server.addTool({
       .describe(
         "Run the tests in 'UI mode' which lets the developer control test execution and view console and network logs"
       ),
+  }),
+});
+
+server.addTool({
+  annotations: {
+    openWorldHint: false,
+    readOnlyHint: true,
+    title: "View Test Screenshot",
+  },
+  description: "Get a screenshot from a test run. Returns the image directly.",
+  execute: async (args) => {
+    const { screenshotFileName, traceDirectory } = args;
+    try {
+      let normalizedPath = screenshotFileName;
+      if (!normalizedPath.startsWith("resources/")) {
+        normalizedPath = `resources/${normalizedPath}`;
+      }
+      const fullPath = `${traceDirectory}/trace/${normalizedPath}`;
+      if (!fs.existsSync(fullPath)) {
+        return `Screenshot not found at ${fullPath}`;
+      }
+      return imageContent({
+        path: fullPath,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return `Error reading screenshot: ${error.message}`;
+      }
+      return `Unknown error reading screenshot`;
+    }
+  },
+  name: "view-screenshot",
+  parameters: z.object({
+    screenshotFileName: z
+      .string()
+      .describe(
+        "The name of the screenshot file within the trace/resources directory (just file name, not path)"
+      ),
+    traceDirectory: z
+      .string()
+      .describe("The directory the trace.zip was saved to"),
+  }),
+});
+
+server.addTool({
+  annotations: {
+    openWorldHint: false,
+    readOnlyHint: true,
+    title: "View All Test Screenshots",
+  },
+  description:
+    "Lists all available screenshots in a test run's trace directory and returns the actual images",
+  execute: async (args) => {
+    const { traceDirectory } = args;
+    const { outputDir } = maybeExtractTraceZip(traceDirectory);
+
+    const resourcesDir = `${outputDir}/resources`;
+    if (!fs.existsSync(resourcesDir)) {
+      return `Resources directory not found at ${resourcesDir}`;
+    }
+
+    try {
+      const files = fs.readdirSync(resourcesDir);
+      const imageFiles = files.filter((file) => /\.(jpe?g|png)$/i.test(file));
+
+      if (imageFiles.length === 0) {
+        return "No screenshots found in the trace directory";
+      }
+      const content: Content[] = [];
+      for (const imgFile of imageFiles) {
+        const fullPath = `${outputDir}/resources/${imgFile}`;
+        content.push({
+          text: `Screenshot: ${imgFile}`,
+          type: "text",
+        });
+        content.push(await imageContent({ path: fullPath }));
+      }
+      return {
+        content,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        return `Error listing screenshots: ${error.message}`;
+      }
+      return `Unknown error listing screenshots`;
+    }
+  },
+  name: "view-all-screenshots",
+  parameters: z.object({
+    traceDirectory: z
+      .string()
+      .describe("The directory the trace.zip was saved to"),
   }),
 });
 
