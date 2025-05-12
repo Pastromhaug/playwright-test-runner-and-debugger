@@ -49,24 +49,18 @@ const getPlaywrightConfig = () => {
  * @returns The full path to the trace directory
  */
 function getFullTracePath(traceDirName) {
-    // Get the output directory from the playwright config, or fall back to 'test-results'
-    const playwrightConfig = getPlaywrightConfig();
-    let outputDir = playwrightConfig?.outputDir || "test-results";
-    // Normalize the outputDir by removing leading "." or "./" and trailing "/"
-    if (outputDir.startsWith("./")) {
-        outputDir = outputDir.substring(2);
-    }
-    else if (outputDir.startsWith(".")) {
-        outputDir = outputDir.substring(1);
-    }
-    if (outputDir.endsWith("/")) {
-        outputDir = outputDir.slice(0, -1);
-    }
-    const fullPath = `${argv.projectRootPath}/${outputDir}/${traceDirName}`;
+    const testResultsDirPath = getTestResultsDirPath();
+    const fullPath = `${testResultsDirPath}/${traceDirName}`;
     if (!fs.existsSync(fullPath)) {
         throw new Error(`Trace directory '${traceDirName}' not found`);
     }
     return fullPath;
+}
+function getTestResultsDirPath() {
+    const playwrightConfig = getPlaywrightConfig();
+    let outputDir = playwrightConfig?.outputDir || "test-results";
+    outputDir = normalizeOutputDir(outputDir);
+    return `${argv.projectRootPath}/${outputDir}`;
 }
 /**
  * Extracts trace.zip file if the output directory doesn't already exist
@@ -85,6 +79,25 @@ function maybeExtractTraceZip(traceDirName) {
     return {
         outputDir,
     };
+}
+/**
+ * Normalizes an output directory path by removing leading "." or "./" and trailing "/"
+ * @param outputDir The output directory path to normalize
+ * @returns The normalized path
+ */
+function normalizeOutputDir(outputDir) {
+    let normalized = outputDir;
+    // Normalize the outputDir by removing leading "." or "./" and trailing "/"
+    if (normalized.startsWith("./")) {
+        normalized = normalized.substring(2);
+    }
+    else if (normalized.startsWith(".")) {
+        normalized = normalized.substring(1);
+    }
+    if (normalized.endsWith("/")) {
+        normalized = normalized.slice(0, -1);
+    }
+    return normalized;
 }
 (async () => {
     try {
@@ -207,7 +220,7 @@ server.addTool({
             "--max-failures",
             "0",
             "--reporter",
-            "list,json",
+            "list",
         ];
         // Add test file path if provided
         if (args.grep) {
@@ -236,6 +249,15 @@ server.addTool({
             let output = stdout;
             if (stderr) {
                 output = `${stderr}\n\n${stdout}`;
+            }
+            const testResultsDirPath = getTestResultsDirPath();
+            const traceDirs = fs.readdirSync(testResultsDirPath);
+            output += `\n\nTrace directories:`;
+            for (const traceDir of traceDirs) {
+                const traceDirPath = `${testResultsDirPath}/${traceDir}`;
+                if (fs.statSync(traceDirPath).isDirectory()) {
+                    output += `\n - ${traceDir}`;
+                }
             }
             return output;
         }
