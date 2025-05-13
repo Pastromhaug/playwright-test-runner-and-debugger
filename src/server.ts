@@ -476,8 +476,11 @@ async function sunSubprocess(
       ...process.env,
     };
 
-    // Spawn the process with the environment variables
-    const childProcess = spawn(command, args, { env: processEnv });
+    // Spawn the process with the environment variables and set the cwd to the project root path
+    const childProcess = spawn(command, args, {
+      cwd: argv.projectRootPath, // Use the project root path as the working directory
+      env: processEnv,
+    });
     let stdout = "";
     let stderr = "";
 
