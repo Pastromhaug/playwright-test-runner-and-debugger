@@ -1,75 +1,88 @@
-# FastMCP Boilerplate
+# Playwright Test Runner and Debugger MCP
 
-A boilerplate for [FastMCP](https://github.com/punkpeye/fastmcp).
+A Machine Code Processing (MCP) tool for executing and debugging Playwright tests directly from within Cursor or other AI coding environments.
 
-This boilerplate is a good starting point for building an MCP server. It includes a basic setup for testing, linting, formatting, and publishing to NPM.
+## Overview
 
-## Development
+This MCP allows you to:
 
-To get started, clone the repository and install the dependencies.
+1. Run Playwright tests from your codebase
+2. Debug failed tests with detailed trace information
+3. View network logs, console output, and screenshots
+4. Interactively debug tests with UI mode and headed browser options
 
-```bash
-git clone https://github.com/punkpeye/fastmcp-boilerplate.git
-cd fastmcp-boilerplate
-npm install
-npm run dev
-```
-
-> [!NOTE]
-> If you are starting a new project, you may want to fork [fastmcp-boilerplate](https://github.com/punkpeye/fastmcp-boilerplate) and start from there.
-
-### Start the server
-
-If you simply want to start the server, you can use the `start` script.
+## Installation
 
 ```bash
-npm run start
+npm install @perandrestromhaug/playwright-test-runner-and-debugger --save-dev
 ```
 
+## Setup
 
-However, you can also interact with the server using the `dev` script.
-
+1. Ensure you have Playwright installed in your project:
 ```bash
-npm run dev
+npm install @playwright/test --save-dev
+npx playwright install
 ```
 
-This will start the server and allow you to interact with it using CLI.
-
-### Testing
-
-A good MCP server should have tests. However, you don't need to test the MCP server itself, but rather the tools you implement.
-
-```bash
-npm run test
+2. Configure the MCP in your `.cursor/mcp.json` file (or equivalent file for Claude Desktop or Claude Code):
+```json
+{
+  "playwright-test-runner-and-debugger": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@perandrestromhaug/playwright-test-runner-and-debugger",
+      "--project-root",
+      "/path/to/your/project"
+    ]
+  }
+}
 ```
 
-In the case of this boilerplate, we only test the implementation of the `add` tool.
+3. Make sure you have a playwright.config.ts file in your project root
+4. Write your tests in the directory specified in your playwright.config.ts
 
-### Linting
+## Tools
 
-Having a good linting setup reduces the friction for other developers to contribute to your project.
+### get-config
+* **Description**: Returns the Playwright configuration as JSON
+* **Parameters**: None
+* **Output**: JSON representation of your Playwright configuration
 
-```bash
-npm run lint
-```
+### list-tests
+* **Description**: Lists all available Playwright tests
+* **Parameters**: None
+* **Output**: List of all available Playwright tests with file paths and test names
 
-This boilerplate uses [Prettier](https://prettier.io/), [ESLint](https://eslint.org/) and [TypeScript ESLint](https://typescript-eslint.io/) to lint the code.
+### run-tests
+* **Description**: Runs Playwright tests, optionally specifying test files or test names
+* **Parameters**:
+  * `grep` (string, optional): Only run tests matching this regular expression
+  * `headed` (boolean, optional, default: true): Run tests in headed mode with visible browser
+  * `debug` (boolean, optional, default: false): Run tests in debug mode for step-by-step execution
+  * `ui` (boolean, optional, default: false): Run tests in UI mode for interactive debugging
+  * `timeout` (number, optional, default: 10000): Specify test timeout in milliseconds
+  * `lastFailed` (boolean, optional, default: false): Only run tests that failed in the last run
+  * `fullyParallel` (boolean, optional, default: true): Run tests in parallel
+* **Output**: 
+  * Test execution results
+  * List of trace directories
+  * Screenshots for any failed tests
 
-### Formatting
+### get-trace
+* **Description**: Gets the trace for a test run, including step-by-step execution info and console logs
+* **Parameters**: `traceDirectory` (string, required): The name of the trace directory (e.g., "home-homepage-has-correct-heading-chromium")
+* **Output**: Detailed trace information showing each step of test execution and console logs
 
-Use `npm run format` to format the code.
+### get-network-log
+* **Description**: Gets browser network logs for a test run
+* **Parameters**: `traceDirectory` (string, required): The name of the trace directory
+* **Output**: Network requests and responses logged during test execution
 
-```bash
-npm run format
-```
+### get-screenshots
+* **Description**: Gets all available screenshots for a test run
+* **Parameters**: `traceDirectory` (string, required): The name of the trace directory
+* **Output**: All screenshots captured during test execution with their names
 
-### GitHub Actions
 
-This repository has a GitHub Actions workflow that runs linting, formatting, tests, and publishes package updates to NPM using [semantic-release](https://semantic-release.gitbook.io/semantic-release/).
-
-In order to use this workflow, you need to:
-
-1. Add `NPM_TOKEN` to the repository secrets
-   1. [Create a new automation token](https://www.npmjs.com/settings/punkpeye/tokens/new)
-   2. Add token as `NPM_TOKEN` environment secret (Settings → Secrets and Variables → Actions → "Manage environment secrets" → "release" → Add environment secret)
-1. Grant write access to the workflow (Settings → Actions → General → Workflow permissions → "Read and write permissions")
