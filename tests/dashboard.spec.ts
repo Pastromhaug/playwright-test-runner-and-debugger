@@ -14,7 +14,7 @@ test("dashboard has correct heading", async ({ page }) => {
 test("dashboard has correct subheading", async ({ page }) => {
   await page.goto("/");
   const paragraph = page.getByText(
-    "This is the test page for running Playwright tests"
+    "This is the test page for running Playwright tests 2"
   );
   await expect(paragraph).toBeVisible();
 });

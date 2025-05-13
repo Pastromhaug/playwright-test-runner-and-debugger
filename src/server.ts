@@ -311,7 +311,40 @@ server.addTool({
           output += `\n - ${traceDir}`;
         }
       }
-      return output;
+
+      // Check for failed tests with error context and screenshots
+      const content: Content[] = [];
+      for (const traceDir of traceDirs) {
+        const traceDirPath = `${testResultsDirPath}/${traceDir}`;
+        if (fs.statSync(traceDirPath).isDirectory()) {
+          const errorContextPath = `${traceDirPath}/error-context.md`;
+          const failedScreenshotPath = `${traceDirPath}/test-failed-1.png`;
+          const finishedScreenshotPath = `${traceDirPath}/test-finished-1.png`;
+
+          // Check if error context exists
+          if (fs.existsSync(errorContextPath)) {
+            let screenshotPath = null;
+            if (fs.existsSync(failedScreenshotPath)) {
+              screenshotPath = failedScreenshotPath;
+            } else if (fs.existsSync(finishedScreenshotPath)) {
+              screenshotPath = finishedScreenshotPath;
+            }
+
+            if (screenshotPath) {
+              content.push({
+                text: `Final screenshot for failed test ${traceDir}:`,
+                type: "text",
+              });
+              content.push(await imageContent({ path: screenshotPath }));
+            }
+          }
+        }
+      }
+
+      // Return content array with screenshots if we have any failed tests
+      return {
+        content: [{ text: output, type: "text" }, ...content],
+      };
     } catch (error) {
       if (error instanceof Error) {
         return `Test execution failed: ${error.message}`;
