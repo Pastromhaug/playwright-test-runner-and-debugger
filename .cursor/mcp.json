@@ -5,13 +5,11 @@
       "args": [
         "tsx",
         "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger/src/server.ts",
-        "--project-root-path",
+        "--project-root",
         "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger",
-        "--env-file-path-relative",
-        ".env",
-        "--playwright-config-path-relative",
+        "--playwright-config",
         "playwright.config.ts",
-        "--playwright-executable-path-relative",
+        "--playwright-executable",
         "node_modules/.bin/playwright"
       ]
     },
@@ -20,13 +18,11 @@
       "args": [
         "-y",
         "@perandrestromhaug/playwright-test-runner-and-debugger",
-        "--project-root-path",
+        "--project-root",
         "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger",
-        "--env-file-path-relative",
-        ".env",
-        "--playwright-config-path-relative",
+        "--playwright-config",
         "playwright.config.ts",
-        "--playwright-executable-path-relative",
+        "--playwright-executable",
         "node_modules/.bin/playwright"
       ]
     }

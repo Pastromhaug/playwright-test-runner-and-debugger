@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import AdmZip from "adm-zip";
 import { spawn } from "child_process";
-import { config as dotenvConfig } from "dotenv";
 import { FastMCP, imageContent } from "fastmcp";
 import fs from "fs";
 // Import jiti for TypeScript file handling
@@ -13,47 +12,34 @@ import { z } from "zod";
 const __filename = fileURLToPath(import.meta.url);
 const argv = yargs(process.argv.slice(2))
     .options({
-    "env-file-path-relative": {
-        alias: "env",
-        default: ".env",
-        demandOption: false,
-        description: "The path to the environment file relative to the project root",
-        type: "string",
-    },
-    "playwright-config-path-relative": {
+    "playwright-config": {
         alias: "pc",
         default: "playwright.config.ts",
         demandOption: false,
         description: "The path to the playwright config file relative to the project root",
         type: "string",
     },
-    "playwright-executable-path-relative": {
+    "playwright-executable": {
         alias: "pe",
         default: "node_modules/.bin/playwright",
         demandOption: false,
         description: "The path to the playwright executable relative to the project root",
         type: "string",
     },
-    "project-root-path": {
-        alias: "prp",
+    "project-root": {
+        alias: "pr",
         demandOption: true,
         description: "The absolute path to the project root",
         type: "string",
     },
 })
     .parseSync();
-// Load environment variables if env file is specified
-const envPath = `${argv.projectRootPath}/${argv.envFilePathRelative}`;
-if (!fs.existsSync(envPath)) {
-    throw new Error(`Environment file not found at ${envPath}`);
-}
-dotenvConfig({ path: envPath });
 // Only worry about the .ts extension
-const playwrightConfigPath = `${argv.projectRootPath}/${argv.playwrightConfigPathRelative}`;
+const playwrightConfigPath = `${argv.projectRoot}/${argv.playwrightConfig}`;
 if (!fs.existsSync(playwrightConfigPath)) {
     throw new Error(`Playwright config file not found at ${playwrightConfigPath}. Current working directory: ${process.cwd()}`);
 }
-const playwrightExecutablePath = `${argv.projectRootPath}/${argv.playwrightExecutablePathRelative}`;
+const playwrightExecutablePath = `${argv.projectRoot}/${argv.playwrightExecutable}`;
 if (!fs.existsSync(playwrightExecutablePath)) {
     throw new Error(`Playwright executable ${playwrightExecutablePath} does not exist. Current working directory: ${process.cwd()}`);
 }
@@ -88,7 +74,7 @@ function getTestResultsDirPath() {
     const playwrightConfig = getPlaywrightConfig();
     let outputDir = playwrightConfig?.outputDir || "test-results";
     outputDir = normalizeOutputDir(outputDir);
-    return `${argv.projectRootPath}/${outputDir}`;
+    return `${argv.projectRoot}/${outputDir}`;
 }
 /**
  * Extracts trace.zip file if the output directory doesn't already exist
@@ -412,7 +398,7 @@ async function sunSubprocess(command, args) {
         };
         // Spawn the process with the environment variables and set the cwd to the project root path
         const childProcess = spawn(command, args, {
-            cwd: argv.projectRootPath, // Use the project root path as the working directory
+            cwd: argv.projectRoot, // Use the project root path as the working directory
             env: processEnv,
         });
         let stdout = "";
