@@ -278,25 +278,13 @@ server.addTool({
             for (const traceDir of traceDirs) {
                 const traceDirPath = `${testResultsDirPath}/${traceDir}`;
                 if (fs.statSync(traceDirPath).isDirectory()) {
-                    const errorContextPath = `${traceDirPath}/error-context.md`;
                     const failedScreenshotPath = `${traceDirPath}/test-failed-1.png`;
-                    const finishedScreenshotPath = `${traceDirPath}/test-finished-1.png`;
-                    // Check if error context exists
-                    if (fs.existsSync(errorContextPath)) {
-                        let screenshotPath = null;
-                        if (fs.existsSync(failedScreenshotPath)) {
-                            screenshotPath = failedScreenshotPath;
-                        }
-                        else if (fs.existsSync(finishedScreenshotPath)) {
-                            screenshotPath = finishedScreenshotPath;
-                        }
-                        if (screenshotPath) {
-                            content.push({
-                                text: `Final screenshot for failed test ${traceDir}:`,
-                                type: "text",
-                            });
-                            content.push(await imageContent({ path: screenshotPath }));
-                        }
+                    if (fs.existsSync(failedScreenshotPath)) {
+                        content.push({
+                            text: `Final screenshot for failed test ${traceDir}:`,
+                            type: "text",
+                        });
+                        content.push(await imageContent({ path: failedScreenshotPath }));
                     }
                 }
             }
