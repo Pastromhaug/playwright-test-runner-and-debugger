@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("dashboard has correct heading", async ({ page }) => {
   await page.goto("/");
+  console.log("TEST_ENV_VAR", process.env.TEST_ENV_VAR);
   const heading = page.getByRole("heading", {
     name: "Playwright Test Runner MCP",
   });

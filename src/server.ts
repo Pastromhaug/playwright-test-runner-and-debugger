@@ -470,23 +470,30 @@ async function sunSubprocess(
   stdout: string;
 }> {
   return new Promise((resolve, reject) => {
-    const process = spawn(command, args);
+    // Create a process environment that includes all the current environment variables
+    // This will ensure that environment variables loaded by dotenv are passed to the child process
+    const processEnv = {
+      ...process.env,
+    };
+
+    // Spawn the process with the environment variables
+    const childProcess = spawn(command, args, { env: processEnv });
     let stdout = "";
     let stderr = "";
 
-    process.stdout.on("data", (data) => {
+    childProcess.stdout.on("data", (data: Buffer) => {
       stdout += data.toString();
     });
 
-    process.stderr.on("data", (data) => {
+    childProcess.stderr.on("data", (data: Buffer) => {
       stderr += data.toString();
     });
 
-    process.on("close", (code) => {
+    childProcess.on("close", (code: null | number) => {
       resolve({ exitCode: code ?? 0, stderr, stdout });
     });
 
-    process.on("error", (err) => {
+    childProcess.on("error", (err: Error) => {
       reject(err);
     });
   });
