@@ -6,11 +6,14 @@
         "tsx",
         "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger/src/server.ts",
         "--project-root-path",
-        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger"
+        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger",
+        "--env-file-path-relative",
+        ".env",
+        "--playwright-config-path-relative",
+        "playwright.config.ts",
+        "--playwright-executable-path-relative",
+        "node_modules/.bin/playwright"
       ]
-    },
-    "test-local-http": {
-      "url": "http://localhost:3210"
     },
     "testing-from-npm-registry": {
       "command": "npx",
@@ -18,7 +21,13 @@
         "-y",
         "@perandrestromhaug/playwright-test-runner-and-debugger",
         "--project-root-path",
-        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger"
+        "/Users/perandrestromhaug/code/mcps/playwright-test-runner-and-debugger",
+        "--env-file-path-relative",
+        ".env",
+        "--playwright-config-path-relative",
+        "playwright.config.ts",
+        "--playwright-executable-path-relative",
+        "node_modules/.bin/playwright"
       ]
     }
   }

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import AdmZip from "adm-zip";
 import { spawn } from "child_process";
+import { config as dotenvConfig } from "dotenv";
 import { FastMCP, imageContent } from "fastmcp";
 import fs from "fs";
 // Import jiti for TypeScript file handling
@@ -12,6 +13,27 @@ import { z } from "zod";
 const __filename = fileURLToPath(import.meta.url);
 const argv = yargs(process.argv.slice(2))
     .options({
+    "env-file-path-relative": {
+        alias: "env",
+        default: ".env",
+        demandOption: false,
+        description: "The path to the environment file relative to the project root",
+        type: "string",
+    },
+    "playwright-config-path-relative": {
+        alias: "pc",
+        default: "playwright.config.ts",
+        demandOption: false,
+        description: "The path to the playwright config file relative to the project root",
+        type: "string",
+    },
+    "playwright-executable-path-relative": {
+        alias: "pe",
+        default: "node_modules/.bin/playwright",
+        demandOption: false,
+        description: "The path to the playwright executable relative to the project root",
+        type: "string",
+    },
     "project-root-path": {
         alias: "prp",
         demandOption: true,
@@ -20,12 +42,18 @@ const argv = yargs(process.argv.slice(2))
     },
 })
     .parseSync();
+// Load environment variables if env file is specified
+const envPath = `${argv.projectRootPath}/${argv.envFilePathRelative}`;
+if (!fs.existsSync(envPath)) {
+    throw new Error(`Environment file not found at ${envPath}`);
+}
+dotenvConfig({ path: envPath });
 // Only worry about the .ts extension
-const playwrightConfigPath = `${argv.projectRootPath}/playwright.config.ts`;
+const playwrightConfigPath = `${argv.projectRootPath}/${argv.playwrightConfigPathRelative}`;
 if (!fs.existsSync(playwrightConfigPath)) {
     throw new Error(`Playwright config file not found at ${playwrightConfigPath}. Current working directory: ${process.cwd()}`);
 }
-const playwrightExecutablePath = `${argv.projectRootPath}/node_modules/.bin/playwright`;
+const playwrightExecutablePath = `${argv.projectRootPath}/${argv.playwrightExecutablePathRelative}`;
 if (!fs.existsSync(playwrightExecutablePath)) {
     throw new Error(`Playwright executable ${playwrightExecutablePath} does not exist. Current working directory: ${process.cwd()}`);
 }
@@ -328,46 +356,6 @@ Summary:
             .describe("Run the tests in 'UI mode' which lets the developer control test execution and view console and network logs. Only do this if the developer specificallyasks you to."),
     }),
 });
-// server.addTool({
-//   annotations: {
-//     openWorldHint: false,
-//     readOnlyHint: true,
-//     title: "View Test Screenshot",
-//   },
-//   description: "Get a screenshot from a test run. Returns the image directly.",
-//   execute: async (args) => {
-//     const { screenshotFileName, traceDirectory } = args;
-//     try {
-//       let normalizedPath = screenshotFileName;
-//       if (!normalizedPath.startsWith("resources/")) {
-//         normalizedPath = `resources/${normalizedPath}`;
-//       }
-//       const fullPath = `${traceDirectory}/trace/${normalizedPath}`;
-//       if (!fs.existsSync(fullPath)) {
-//         return `Screenshot not found at ${fullPath}`;
-//       }
-//       return imageContent({
-//         path: fullPath,
-//       });
-//     } catch (error) {
-//       if (error instanceof Error) {
-//         return `Error reading screenshot: ${error.message}`;
-//       }
-//       return `Unknown error reading screenshot`;
-//     }
-//   },
-//   name: "view-screenshot",
-//   parameters: z.object({
-//     screenshotFileName: z
-//       .string()
-//       .describe(
-//         "The name of the screenshot file within the trace/resources directory (just file name, not path)"
-//       ),
-//     traceDirectory: z
-//       .string()
-//       .describe("The directory the trace.zip was saved to"),
-//   }),
-// });
 server.addTool({
     annotations: {
         openWorldHint: false,
