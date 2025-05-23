@@ -5,6 +5,7 @@ import { Content, FastMCP, imageContent } from "fastmcp";
 import fs from "fs";
 // Import jiti for TypeScript file handling
 import jiti from "jiti";
+import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
 import { z } from "zod";
@@ -70,6 +71,56 @@ const getPlaywrightConfig = () => {
 };
 
 /**
+ * Creates a filtered version of a trace file to reduce size and remove bloated data
+ * @param traceFilePath The path to the original trace file
+ * @returns The path to the filtered trace file
+ */
+async function createFilteredTrace(traceFilePath: string): Promise<string> {
+  const filteredPath = traceFilePath.replace(".trace", "_filtered.trace");
+
+  // Check if filtered trace already exists and is newer than original
+  if (fs.existsSync(filteredPath)) {
+    const originalStat = fs.statSync(traceFilePath);
+    const filteredStat = fs.statSync(filteredPath);
+    if (filteredStat.mtime > originalStat.mtime) {
+      return filteredPath;
+    }
+  }
+
+  // Path to our filter script (assuming it's in the project root)
+  const filterScriptPath = path.join(argv.projectRoot, "filter_trace.py");
+
+  if (!fs.existsSync(filterScriptPath)) {
+    console.warn(
+      `Filter script not found at ${filterScriptPath}, using original trace`
+    );
+    return traceFilePath;
+  }
+
+  try {
+    // Run the Python filtering script
+    const { exitCode, stderr } = await sunSubprocess("python", [
+      filterScriptPath,
+      traceFilePath,
+      filteredPath,
+      "--preset",
+      "minimal",
+    ]);
+
+    if (exitCode === 0 && fs.existsSync(filteredPath)) {
+      console.log(`Created filtered trace: ${filteredPath}`);
+      return filteredPath;
+    } else {
+      console.warn(`Failed to filter trace (exit code ${exitCode}): ${stderr}`);
+      return traceFilePath;
+    }
+  } catch (error) {
+    console.warn(`Error filtering trace: ${error}`);
+    return traceFilePath;
+  }
+}
+
+/**
  * Constructs the full path to the trace directory from just the directory name
  * @param traceDirName The name of the trace directory (e.g. "home-homepage-has-correct-heading-chromium")
  * @returns The full path to the trace directory
@@ -106,6 +157,16 @@ function maybeExtractTraceZip(traceDirName: string): {
   }
   const zip = new AdmZip(zipPath);
   zip.extractAllTo(outputDir, true);
+
+  // Create filtered trace file if the main trace exists
+  const mainTraceFile = `${outputDir}/0-trace.trace`;
+  if (fs.existsSync(mainTraceFile)) {
+    // Create filtered trace asynchronously - don't wait for it
+    createFilteredTrace(mainTraceFile).catch((error) => {
+      console.warn(`Failed to create filtered trace: ${error}`);
+    });
+  }
+
   return {
     outputDir,
   };
@@ -198,20 +259,60 @@ server.addTool({
     title: "Get Trace for Test Run",
   },
   description:
-    "Get the trace for a test run. This includes step-by-step playwright test execution info along with console logs. Useful for debugging test failures",
+    "Get the trace for a test run. This includes step-by-step playwright test execution info along with console logs. Useful for debugging test failures. Note: Returns a filtered version of the trace that removes bloated data like DOM snapshots while preserving essential debugging information.",
   execute: async (args) => {
     const { outputDir } = maybeExtractTraceZip(args.traceDirectory);
     let output = "";
-    const traceFilePath = `${outputDir}/0-trace.trace`;
+    const originalTraceFilePath = `${outputDir}/0-trace.trace`;
+
     try {
-      const traceContent = fs.readFileSync(traceFilePath, "utf8");
-      output += `Trace content:\n\n${traceContent}`;
+      // Try to use filtered trace first
+      const filteredTraceFilePath = await createFilteredTrace(
+        originalTraceFilePath
+      );
+      const traceContent = fs.readFileSync(filteredTraceFilePath, "utf8");
+
+      if (filteredTraceFilePath.includes("_filtered.trace")) {
+        output += `Filtered trace content (95%+ size reduction applied):\n\n${traceContent}`;
+      } else {
+        output += `Trace content:\n\n${traceContent}`;
+      }
     } catch (error) {
       output += `\n\nError reading trace: ${error}`;
     }
     return output;
   },
   name: "get-trace",
+  parameters: z.object({
+    traceDirectory: z
+      .string()
+      .describe(
+        "The name of the trace directory (e.g. 'home-homepage-has-correct-heading-chromium')"
+      ),
+  }),
+});
+
+server.addTool({
+  annotations: {
+    openWorldHint: false,
+    readOnlyHint: true,
+    title: "Get Raw Trace for Test Run",
+  },
+  description:
+    "Get the raw/unfiltered trace for a test run. This includes all data including DOM snapshots and can be very large. Use get-trace instead for most debugging needs.",
+  execute: async (args) => {
+    const { outputDir } = maybeExtractTraceZip(args.traceDirectory);
+    let output = "";
+    const traceFilePath = `${outputDir}/0-trace.trace`;
+    try {
+      const traceContent = fs.readFileSync(traceFilePath, "utf8");
+      output += `Raw trace content (unfiltered):\n\n${traceContent}`;
+    } catch (error) {
+      output += `\n\nError reading trace: ${error}`;
+    }
+    return output;
+  },
+  name: "get-raw-trace",
   parameters: z.object({
     traceDirectory: z
       .string()
