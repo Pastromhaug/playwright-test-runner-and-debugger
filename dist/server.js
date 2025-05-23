@@ -5,10 +5,10 @@ import { FastMCP, imageContent } from "fastmcp";
 import fs from "fs";
 // Import jiti for TypeScript file handling
 import jiti from "jiti";
-import path from "path";
 import { fileURLToPath } from "url";
 import yargs from "yargs";
 import { z } from "zod";
+import { filterTraceWithPreset } from "./traceFilter.js";
 // Get current filename in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const argv = yargs(process.argv.slice(2))
@@ -73,29 +73,11 @@ async function createFilteredTrace(traceFilePath) {
             return filteredPath;
         }
     }
-    // Path to our filter script (assuming it's in the project root)
-    const filterScriptPath = path.join(argv.projectRoot, "filter_trace.py");
-    if (!fs.existsSync(filterScriptPath)) {
-        console.warn(`Filter script not found at ${filterScriptPath}, using original trace`);
-        return traceFilePath;
-    }
     try {
-        // Run the Python filtering script
-        const { exitCode, stderr } = await sunSubprocess("python", [
-            filterScriptPath,
-            traceFilePath,
-            filteredPath,
-            "--preset",
-            "minimal",
-        ]);
-        if (exitCode === 0 && fs.existsSync(filteredPath)) {
-            console.log(`Created filtered trace: ${filteredPath}`);
-            return filteredPath;
-        }
-        else {
-            console.warn(`Failed to filter trace (exit code ${exitCode}): ${stderr}`);
-            return traceFilePath;
-        }
+        // Use the TypeScript filtering function
+        await filterTraceWithPreset(traceFilePath, filteredPath, "minimal");
+        console.log(`Created filtered trace: ${filteredPath}`);
+        return filteredPath;
     }
     catch (error) {
         console.warn(`Error filtering trace: ${error}`);
