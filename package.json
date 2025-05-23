@@ -3,7 +3,7 @@
   "version": "1.0.31",
   "type": "module",
   "bin": {
-    "playwright-test-runner-and-debugger": "./dist/server.js"
+    "playwright-test-runner-and-debugger": "dist/server.js"
   },
   "scripts": {
     "build": "tsc",
