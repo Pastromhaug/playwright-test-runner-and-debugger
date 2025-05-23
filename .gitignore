@@ -3,3 +3,4 @@ dist
 test-results
 .DS_Store
 playwright-report
+example_trace
