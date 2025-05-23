@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import yargs from "yargs";
 import { z } from "zod";
 
+import { filterNetworkTraceWithPreset } from "./networkTraceFilter.js";
 import { filterTraceWithPreset } from "./traceFilter.js";
 
 // Get current filename in ES modules
@@ -70,6 +71,43 @@ const getPlaywrightConfig = () => {
     throw error;
   }
 };
+
+/**
+ * Creates a filtered version of a network trace file to reduce size and remove bloated data
+ * @param networkTraceFilePath The path to the original network trace file
+ * @returns The path to the filtered network trace file
+ */
+async function createFilteredNetworkTrace(
+  networkTraceFilePath: string
+): Promise<string> {
+  const filteredPath = networkTraceFilePath.replace(
+    ".network",
+    "_filtered.network"
+  );
+
+  // Check if filtered network trace already exists and is newer than original
+  if (fs.existsSync(filteredPath)) {
+    const originalStat = fs.statSync(networkTraceFilePath);
+    const filteredStat = fs.statSync(filteredPath);
+    if (filteredStat.mtime > originalStat.mtime) {
+      return filteredPath;
+    }
+  }
+
+  try {
+    // Use the TypeScript network filtering function with minimal preset
+    await filterNetworkTraceWithPreset(
+      networkTraceFilePath,
+      filteredPath,
+      "minimal"
+    );
+    console.log(`Created filtered network trace: ${filteredPath}`);
+    return filteredPath;
+  } catch (error) {
+    console.warn(`Error filtering network trace: ${error}`);
+    return networkTraceFilePath;
+  }
+}
 
 /**
  * Creates a filtered version of a trace file to reduce size and remove bloated data
@@ -146,6 +184,15 @@ function maybeExtractTraceZip(traceDirName: string): {
     });
   }
 
+  // Create filtered network trace file if the network trace exists
+  const networkTraceFile = `${outputDir}/0-trace.network`;
+  if (fs.existsSync(networkTraceFile)) {
+    // Create filtered network trace asynchronously - don't wait for it
+    createFilteredNetworkTrace(networkTraceFile).catch((error) => {
+      console.warn(`Failed to create filtered network trace: ${error}`);
+    });
+  }
+
   return {
     outputDir,
   };
@@ -208,14 +255,30 @@ server.addTool({
     title: "Get Network Log for Test Run",
   },
   description:
-    "Get browser network logs for a test run. Useful for debugging test failures",
+    "Get browser network logs for a test run. By default returns a filtered version that removes analytics, third-party services, and verbose metadata while preserving essential debugging information. Use raw=true to get unfiltered logs.",
   execute: async (args) => {
     const { outputDir } = maybeExtractTraceZip(args.traceDirectory);
     let output = "";
-    const networkFilePath = `${outputDir}/0-trace.network`;
+    const originalNetworkFilePath = `${outputDir}/0-trace.network`;
+
     try {
-      const networkContent = fs.readFileSync(networkFilePath, "utf8");
-      output += `Network log:\n\n${networkContent}`;
+      if (args.raw) {
+        // Return raw unfiltered network log
+        const networkContent = fs.readFileSync(originalNetworkFilePath, "utf8");
+        output += `Raw network log (unfiltered):\n\n${networkContent}`;
+      } else {
+        // Return filtered network log
+        const filteredNetworkFilePath = await createFilteredNetworkTrace(
+          originalNetworkFilePath
+        );
+        const networkContent = fs.readFileSync(filteredNetworkFilePath, "utf8");
+
+        if (filteredNetworkFilePath.includes("_filtered.network")) {
+          output += `Filtered network log (80%+ size reduction, third-party services removed):\n\n${networkContent}`;
+        } else {
+          output += `Network log:\n\n${networkContent}`;
+        }
+      }
     } catch (error) {
       output += `\n\nError reading network file: ${error}`;
     }
@@ -223,6 +286,13 @@ server.addTool({
   },
   name: "get-network-log",
   parameters: z.object({
+    raw: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        "Return raw unfiltered network log including all analytics, third-party services, and verbose metadata. Default is false (filtered)."
+      ),
     traceDirectory: z
       .string()
       .describe(
@@ -238,23 +308,29 @@ server.addTool({
     title: "Get Trace for Test Run",
   },
   description:
-    "Get the trace for a test run. This includes step-by-step playwright test execution info along with console logs. Useful for debugging test failures. Note: Returns a filtered version of the trace that removes bloated data like DOM snapshots while preserving essential debugging information.",
+    "Get the trace for a test run. This includes step-by-step playwright test execution info along with console logs. By default returns a filtered version that removes bloated data like DOM snapshots while preserving essential debugging information. Use raw=true to get unfiltered traces.",
   execute: async (args) => {
     const { outputDir } = maybeExtractTraceZip(args.traceDirectory);
     let output = "";
     const originalTraceFilePath = `${outputDir}/0-trace.trace`;
 
     try {
-      // Try to use filtered trace first
-      const filteredTraceFilePath = await createFilteredTrace(
-        originalTraceFilePath
-      );
-      const traceContent = fs.readFileSync(filteredTraceFilePath, "utf8");
-
-      if (filteredTraceFilePath.includes("_filtered.trace")) {
-        output += `Filtered trace content (95%+ size reduction applied):\n\n${traceContent}`;
+      if (args.raw) {
+        // Return raw unfiltered trace
+        const traceContent = fs.readFileSync(originalTraceFilePath, "utf8");
+        output += `Raw trace content (unfiltered):\n\n${traceContent}`;
       } else {
-        output += `Trace content:\n\n${traceContent}`;
+        // Return filtered trace
+        const filteredTraceFilePath = await createFilteredTrace(
+          originalTraceFilePath
+        );
+        const traceContent = fs.readFileSync(filteredTraceFilePath, "utf8");
+
+        if (filteredTraceFilePath.includes("_filtered.trace")) {
+          output += `Filtered trace content (95%+ size reduction applied):\n\n${traceContent}`;
+        } else {
+          output += `Trace content:\n\n${traceContent}`;
+        }
       }
     } catch (error) {
       output += `\n\nError reading trace: ${error}`;
@@ -263,36 +339,13 @@ server.addTool({
   },
   name: "get-trace",
   parameters: z.object({
-    traceDirectory: z
-      .string()
+    raw: z
+      .boolean()
+      .optional()
+      .default(false)
       .describe(
-        "The name of the trace directory (e.g. 'home-homepage-has-correct-heading-chromium')"
+        "Return raw unfiltered trace including all DOM snapshots and verbose data. Default is false (filtered)."
       ),
-  }),
-});
-
-server.addTool({
-  annotations: {
-    openWorldHint: false,
-    readOnlyHint: true,
-    title: "Get Raw Trace for Test Run",
-  },
-  description:
-    "Get the raw/unfiltered trace for a test run. This includes all data including DOM snapshots and can be very large. Use get-trace instead for most debugging needs.",
-  execute: async (args) => {
-    const { outputDir } = maybeExtractTraceZip(args.traceDirectory);
-    let output = "";
-    const traceFilePath = `${outputDir}/0-trace.trace`;
-    try {
-      const traceContent = fs.readFileSync(traceFilePath, "utf8");
-      output += `Raw trace content (unfiltered):\n\n${traceContent}`;
-    } catch (error) {
-      output += `\n\nError reading trace: ${error}`;
-    }
-    return output;
-  },
-  name: "get-raw-trace",
-  parameters: z.object({
     traceDirectory: z
       .string()
       .describe(

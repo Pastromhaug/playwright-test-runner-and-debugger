@@ -71,14 +71,18 @@ npx playwright install
   * Screenshots for any failed tests
 
 ### get-trace
-* **Description**: Gets the trace for a test run, including step-by-step execution info and console logs
-* **Parameters**: `traceDirectory` (string, required): The name of the trace directory (e.g., "home-homepage-has-correct-heading-chromium")
-* **Output**: Detailed trace information showing each step of test execution and console logs
+* **Description**: Gets the trace for a test run, including step-by-step execution info and console logs. By default returns a filtered version that removes bloated data like DOM snapshots while preserving essential debugging information.
+* **Parameters**: 
+  * `traceDirectory` (string, required): The name of the trace directory (e.g., "home-homepage-has-correct-heading-chromium")
+  * `raw` (boolean, optional, default: false): Return raw unfiltered trace including all DOM snapshots and verbose data
+* **Output**: Detailed trace information showing each step of test execution and console logs (filtered by default)
 
 ### get-network-log
-* **Description**: Gets browser network logs for a test run
-* **Parameters**: `traceDirectory` (string, required): The name of the trace directory
-* **Output**: Network requests and responses logged during test execution
+* **Description**: Gets browser network logs for a test run. By default returns a filtered version that removes analytics, third-party services, and verbose metadata while preserving essential debugging information.
+* **Parameters**: 
+  * `traceDirectory` (string, required): The name of the trace directory
+  * `raw` (boolean, optional, default: false): Return raw unfiltered network log including all analytics, third-party services, and verbose metadata
+* **Output**: Network requests and responses (filtered by default for 80%+ size reduction, focused on localhost application traffic)
 
 ### get-screenshots
 * **Description**: Gets all available screenshots for a test run

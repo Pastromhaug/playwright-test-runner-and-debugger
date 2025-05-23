@@ -207,4 +207,37 @@ Without overwhelming LLMs with:
 3. **Adjust presets** based on your specific debugging needs
 4. **Monitor results** to ensure essential data isn't lost
 
-The goal is making trace files **LLM-friendly** while preserving all **debugging-critical** information. 
+The goal is making trace files **LLM-friendly** while preserving all **debugging-critical** information.
+
+## 🌐 Network Log Filtering 
+
+### **Automatic Filtering in MCP Tools**
+
+The `get-network-log` tool now returns **automatically filtered network traces** that focus on essential debugging information:
+
+**✅ What's Preserved:**
+- **Application requests** - Your localhost server traffic 
+- **API calls** - GraphQL, REST endpoints, webhooks
+- **Authentication** - Login, session, CSRF tokens
+- **Error responses** - 4xx/5xx status codes with full details
+- **Essential headers** - Content-Type, Authorization, error headers
+
+**❌ What's Removed:**
+- **Analytics tracking** - Google Analytics, Facebook, LinkedIn ads
+- **Third-party services** - Intercom, Sentry, Hotjar widgets  
+- **Static assets** - CSS, JS, fonts, images from CDNs
+- **Maps/Cloud APIs** - Google Maps, AWS analytics, Cognito
+- **Verbose metadata** - SHA1 hashes, timing breakdowns, compression details
+
+### **Size Impact**
+- **80%+ reduction** in network trace size (889KB → 178KB)
+- **50% fewer requests** (285 → 142 requests) 
+- **100% focus** on debugging-relevant traffic
+
+### **Tool Options**
+- **`get-network-log`** - Filtered traces by default (recommended for debugging)
+- **`get-network-log` with `raw=true`** - Unfiltered traces (when you need everything)
+- **`get-trace`** - Filtered traces by default (recommended for debugging)  
+- **`get-trace` with `raw=true`** - Unfiltered traces (when you need everything)
+
+The filtering automatically happens when traces are extracted, creating clean network logs perfect for LLM analysis. 
